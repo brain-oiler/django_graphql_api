@@ -1,13 +1,15 @@
 from django.db import models
-
+from django.contrib.auth import get_user_model
 # Create your models here.
+
+User = get_user_model()
 
 
 class Section(models.Model):
     """
     A study section like a new level or semester.
     """
-
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     start_date = models.DateField(
         help_text="When is this section meant to begin.", null=True, blank=True
     )
@@ -30,6 +32,7 @@ class Course(models.Model):
     A course or subject for a particular section.
     """
 
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     name = models.CharField(max_length=255, help_text="Course name")
     start_date = models.DateField(
         help_text="When will the user start taking this course",
@@ -53,6 +56,7 @@ class Topic(models.Model):
     A topic for a particular course.
     """
 
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     name = models.CharField(
         max_length=255, help_text="Topic name, for a course")
     course = models.ForeignKey(
@@ -63,11 +67,12 @@ class Topic(models.Model):
     )
 
 
-class Resources(models.Model):
+class Resource(models.Model):
     """
     Study resource (could include video, image, pdf, audio etc)
     could be for a specific course.
     """
+    creator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     description = models.TextField(
         help_text="A description for this resource.", null=True, blank=True
@@ -93,6 +98,7 @@ class Resources(models.Model):
         null=True,
         blank=True,
     )
+    public = models.BooleanField(default=False)
 
     def get_url(self, obj):
         if hasattr(obj, 'url'):
@@ -106,6 +112,7 @@ class TimeTable(models.Model):
     Could be for a particular Section, Course, Topic
     or just a regular timetable
     """
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     section = models.ForeignKey(
         Section,
         on_delete=models.SET_NULL,
@@ -132,6 +139,7 @@ class TimeTable(models.Model):
     description = models.TextField(
         help_text="Describes what this timetable is for", null=True, blank=True
     )
+    public = models.BooleanField(default=False)
 
 
 DAYS_OF_THE_WEEK = (
@@ -149,6 +157,7 @@ class TimeTableActivity(models.Model):
     """
     Defines an item on the timetable.
     """
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     timetable = models.ForeignKey(
         TimeTable,
         on_delete=models.CASCADE,
@@ -172,10 +181,12 @@ class Todo(models.Model):
     """
     A todo list is a todo list
     """
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     name = models.CharField(max_length=255, help_text="Name of this list")
     description = models.TextField(
         null=True, blank=True, help_text="What is this list for."
     )
+    public = models.BooleanField(default=False)
 
 
 class TodoItem(models.Model):
