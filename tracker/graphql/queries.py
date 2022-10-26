@@ -1,16 +1,24 @@
 import graphene
-
-from tracker.models import Course, Section
+# from graphene_django.filter import DjangoFilterConnectionField
+from tracker.models import Course, Section, Topic
+from .decorators import login_required
 
 from . import types
 
 
-class TrackeQuery(graphene.ObjectType):
-    all_section = graphene.List(types.SectionType)
-    all_courses = graphene.List(types.CourseType)
+class TrackerQuery(graphene.ObjectType):
+    user_sections = graphene.List(types.SectionType)
+    user_courses = graphene.List(types.CourseType)
+    user_topics = graphene.List(types.TopicType)
 
-    def resolve_all_section(root, info, **kwargs):
-        return Section.objects.all()
+    @login_required
+    def resolve_user_sections(root, info, **kwargs):
+        return Section.objects.filter(user=info.context.user)
 
-    def resolve_all_course(root, info, **kwargs):
-        return Course.objects.all()
+    @login_required
+    def resolve_user_courses(root, info, **kwargs):
+        return Course.objects.filter(user=info.context.user)
+
+    @login_required
+    def resolve_user_topics(root, info, **kwargs):
+        return Topic.objects.filter(user=info.context.user)
