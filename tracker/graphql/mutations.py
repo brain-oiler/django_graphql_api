@@ -7,29 +7,32 @@ from .types import SectionType, CourseType, TopicType
 
 class SectionCreateUpdateMutation(graphene.Mutation):
     """
-    Creates, updates and returns a section object. To update all you need to do
-    is pass in the section `id` as arguments.
+    Creates, updates and returns a `Section` object. \n
+    To update all you need to do is pass in the section `id` as arguments.
     """
     section = graphene.Field(SectionType)
     success = graphene.Boolean()
 
     class Arguments:
-        id = graphene.ID()
+        section_id = graphene.ID()
         name = graphene.String(
-            description="What name would you give this section.")
-        description = graphene.String()
+            description="""
+            What name would you give this section.
+            eg., '300Level Second Semester'""")
+        description = graphene.String(description="""
+            How will you describe this section,
+            perhaps event what you hope to have accomplished
+            at the end of this section""")
         start_date = graphene.Date(description="When does this section begin.")
         end_date = graphene.Date(description="When will this section end.")
 
     @classmethod
     @login_required
     def mutate(cls, root, info, **kwargs):
-        id = kwargs.get("id", None)
-        # if info.context.user.is_anonymous:
-        #     raise GraphQLError('User is not authenticated')
-        if id:
+        section_id = kwargs.get("section_id", None)
+        if section_id:
             try:
-                section = Section.objects.get(pk=id)
+                section = Section.objects.get(pk=section_id)
             except Section.DoesNotExist:
                 raise GraphQLError('Specified Section does not exist')
             if section.user == info.context.user:
@@ -56,25 +59,34 @@ class SectionCreateUpdateMutation(graphene.Mutation):
 
 class CourseCreateUpdateMutation(graphene.Mutation):
     """
-    Creates, updates and returns a course object. To update all
-    you need to do is pass the course `id`.
+    Creates, updates and returns a `Course` object.\n
+    To update all you need to do is pass the course `id`.
     """
     course = graphene.Field(CourseType)
     success = graphene.Boolean()
 
     class Arguments:
-        id = graphene.ID()
-        section_id = graphene.ID()
-        name = graphene.String()
-        description = graphene.String()
-        start_date = graphene.Date()
-        end_date = graphene.Date()
+        course_id = graphene.ID(
+            description="""
+            This is only required when performing an update to this section""")
+        section_id = graphene.ID(
+            description="""
+            This is required if this course is for a specific section""")
+        name = graphene.String(description="""
+            What's the name of the course.""")
+        description = graphene.String(description="""
+            A short description of the course, perhaps it's purpose
+            """)
+        start_date = graphene.Date(description="""
+            When will you start taking this course""")
+        end_date = graphene.Date(description="""
+            When will complete this course""")
 
     @classmethod
     @login_required
     def mutate(cls, root, info, **kwargs):
         section_id = kwargs.get('section_id', None)
-        id = kwargs.get('id', None)
+        couse_id = kwargs.get('course_id', None)
         section = None
         if section_id:
             try:
@@ -84,9 +96,9 @@ class CourseCreateUpdateMutation(graphene.Mutation):
                         'You are not authorised to use this section')
             except Section.DoesNotExist:
                 raise GraphQLError('Specified Section was not found')
-        if id:
+        if couse_id:
             try:
-                course = Course.objects.get(pk=id)
+                course = Course.objects.get(pk=couse_id)
                 if course.user != info.context.user:
                     raise GraphQLError(
                         'You are not authorised to edit this course')
@@ -114,17 +126,23 @@ class CourseCreateUpdateMutation(graphene.Mutation):
 class TopicCreateUpdateMutation(graphene.Mutation):
     """
     Creates, updates and returns a `Topic` object for a particular course.
-    Note: a course `id` must be passed. To update, all you need to do
-    is pass in the topic `id`.
+    Note: a course `id` must be passed. \n
+    To update, all you need to do is pass in the topic `id`.
     """
     topic = graphene.Field(TopicType)
     success = graphene.Boolean()
 
     class Arguments:
-        name = graphene.String()
-        description = graphene.String()
-        topic_id = graphene.ID()
-        course_id = graphene.ID(required=True)
+        name = graphene.String(
+            description="What should this topic be called")
+        description = graphene.String(
+            description="A short summary of this topic")
+        topic_id = graphene.ID(
+            description="""
+            This is only required when performing an update to the topic""")
+        course_id = graphene.ID(
+            required=True,
+            description="The `id` of the course this topic belongs to.")
 
     @classmethod
     @login_required
