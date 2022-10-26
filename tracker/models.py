@@ -48,7 +48,7 @@ class Course(models.Model):
     section = models.ForeignKey(
         Section, on_delete=models.CASCADE, related_name="courses"
     )
-    progress = models.IntegerField()
+    progress = models.IntegerField(null=True, blank=True)
 
 
 class Topic(models.Model):

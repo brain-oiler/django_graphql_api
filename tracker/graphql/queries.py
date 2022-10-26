@@ -1,13 +1,13 @@
 import graphene
-from graphql_auth.decorators import login_required
 # from graphene_django.filter import DjangoFilterConnectionField
 from tracker.models import Course, Section
+from .decorators import login_required
 
 from . import types
 
 
 class TrackerQuery(graphene.ObjectType):
-    user_sections = graphene.Field(types.SectionType)
+    user_sections = graphene.List(types.SectionType)
 
     @login_required
     def resolve_user_sections(root, info, **kwargs):

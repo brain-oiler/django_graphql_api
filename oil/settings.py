@@ -153,5 +153,5 @@ GRAPHQL_JWT = {
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 GRAPHQL_AUTH = {
     'LOGIN_ALLOWED_FIELDS': ['email'],
-    'REGISTER_MUTATION_FIELDS': ['email']
+    'REGISTER_MUTATION_FIELDS': ['email', 'username']
 }
