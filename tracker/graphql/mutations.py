@@ -1,8 +1,8 @@
 import graphene
 from graphql import GraphQLError
 from graphql_auth.decorators import login_required
-from tracker.models import Section, Course
-from .types import SectionType, CourseType
+from tracker.models import Section, Course, Topic
+from .types import SectionType, CourseType, TopicType
 
 
 class SectionCreateUpdateMutation(graphene.Mutation):
@@ -111,6 +111,57 @@ class CourseCreateUpdateMutation(graphene.Mutation):
         return CourseCreateUpdateMutation(course=course, success=True)
 
 
+class TopicCreateUpdateMutation(graphene.Mutation):
+    """
+    Creates, updates and returns a `Topic` object for a particular course.
+    Note: a course `id` must be passed. To update, all you need to do
+    is pass in the topic `id`.
+    """
+    topic = graphene.Field(TopicType)
+    success = graphene.Boolean()
+
+    class Arguments:
+        name = graphene.String()
+        description = graphene.String()
+        topic_id = graphene.ID()
+        course_id = graphene.ID(required=True)
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, **kwargs):
+        try:
+            course = Course.objects.get(pk=kwargs.get('course_id'))
+            if course.user != info.context.user:
+                raise GraphQLError(
+                    "You do not have permissions to use this course")
+            topic_id = kwargs.get('topic_id', None)
+            if topic_id:
+                try:
+                    topic = Topic.objects.get(pk=topic_id)
+                    if topic.user != info.context.user:
+                        raise GraphQLError(
+                            'You do not have permissions to alter this topic')
+                    topic.name = kwargs.get('name', topic.name)
+                    topic.description = kwargs.get(
+                        'description', topic.description)
+                    topic.course = course
+                    topic.user = info.context.user
+                    topic.save()
+                    return TopicCreateUpdateMutation(topic=topic, success=True)
+                except Topic.DoesNotExist:
+                    raise GraphQLError('The specified topic was not found')
+            topic = Topic(
+                    name=kwargs.get('name', None),
+                    description=kwargs.get('description', None),
+                    course=course,
+                    user=info.context.user)
+            topic.save()
+            return TopicCreateUpdateMutation(topic=topic, success=True)
+        except Course.DoesNotExist:
+            raise GraphQLError('The specified course was not found')
+
+
 class TrackerMutation(graphene.ObjectType):
     create_update_section = SectionCreateUpdateMutation.Field()
     create_update_course = CourseCreateUpdateMutation.Field()
+    create_update_topic = TopicCreateUpdateMutation.Field()

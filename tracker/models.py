@@ -29,7 +29,7 @@ class Section(models.Model):
 
 class Course(models.Model):
     """
-    A course or subject for a particular section.
+    A course or subject this might be for a particular section.
     """
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
@@ -46,7 +46,8 @@ class Course(models.Model):
         help_text="A descriptive summary of the course.", null=True, blank=True
     )
     section = models.ForeignKey(
-        Section, on_delete=models.CASCADE, related_name="courses"
+        Section, on_delete=models.CASCADE, related_name="courses",
+        null=True, blank=True
     )
     progress = models.IntegerField(null=True, blank=True)
 

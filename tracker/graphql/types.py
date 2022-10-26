@@ -26,7 +26,7 @@ class CourseType(DjangoObjectType):
         model: Model = Course
         fields: (str) = (
             "name", "start_date", "end_date",
-            "description", "section", "progress")
+            "description", "section", "progress", "id")
         filter_fields = {
             'start_date': ['exact'],
             'end_date': ['exact'],
@@ -39,7 +39,7 @@ class TopicType(DjangoObjectType):
     class Meta:
         model: Model = Topic
         fields: (str) = (
-            "name", "course", "description")
+            "name", "course", "description", "id")
         filter_fields = {
             'course': ['exact'],
             'name': ['exact', 'icontatins', 'istartswith']
