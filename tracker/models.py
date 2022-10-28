@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.core.validators import FileExtensionValidator
 # Create your models here.
 
 User = get_user_model()
@@ -78,11 +79,14 @@ class Resource(models.Model):
     description = models.TextField(
         help_text="A description for this resource.", null=True, blank=True
     )
-    pdf = models.FileField(
+    document = models.FileField(
         null=True,
         blank=True,
-        upload_to="uploads/pdf",
-        help_text="Pdf resource for a course",
+        validators=[FileExtensionValidator(
+            allowed_extensions=[
+                'pdf', 'doc', 'docx', 'xlsx', 'xls', 'txt'])],
+        upload_to="uploads/documents",
+        help_text="Document resource for a course",
     )
     link = models.URLField(
         help_text="Url to an online resource, video, document e.t.c",
@@ -90,12 +94,16 @@ class Resource(models.Model):
     audio = models.FileField(
         null=True,
         blank=True,
+        validators=[FileExtensionValidator(
+            allowed_extensions=['mp3', 'mtm', 'ec3'])],
         upload_to="uploads/audio",
         help_text="Audio resource like a lecture recording",
     )
     video = models.FileField(
         null=True,
         blank=True,
+        validators=[FileExtensionValidator(
+            allowed_extensions=['mp4', 'mov', 'wmv', 'avi', 'mkv'])],
         upload_to="uploads/video",
         help_text="Video resource for a course")
     image = models.ImageField(
@@ -148,25 +156,23 @@ class TimeTable(models.Model):
     public = models.BooleanField(default=False)
 
 
-DAYS_OF_THE_WEEK = (
-    ("Su", "Sunday"),
-    ("Mo", "Monday"),
-    ("Tu", "Tuesday"),
-    ("We", "Wednesday"),
-    ("Th", "Thursday"),
-    ("Fr", "Friday"),
-    ("Sa", "Saturday"),
-)
-
-
 class TimeTableActivity(models.Model):
     """
     Defines an item on the timetable.
     """
+    class DaysOfTheWeek(models.TextChoices):
+        Sunday = 'SUNDAY'
+        Monday = 'MONDAY'
+        Tuesday = 'TUESDAY'
+        Wednesday = 'WEDNESDAY'
+        Thursday = 'THURSDAY'
+        Friday = 'FRIDAY'
+        Saturday = 'SATURDAY'
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     timetable = models.ForeignKey(
         TimeTable,
         on_delete=models.CASCADE,
+        related_name="table_items",
         help_text="What time table does this activity belong to.",
     )
     start_time = models.TimeField(
@@ -178,8 +184,8 @@ class TimeTableActivity(models.Model):
         help_text="A description of this activity.", null=True, blank=True
     )
     day = models.CharField(
-        max_length=2, help_text="Day for this activity",
-        choices=DAYS_OF_THE_WEEK
+        max_length=10, help_text="Day for this activity",
+        choices=DaysOfTheWeek.choices
     )
 
 
@@ -199,6 +205,7 @@ class TodoItem(models.Model):
     """
     Will describe to a specific item of a todo list.
     """
+    todo_list = models.ForeignKey(Todo, on_delete=models.CASCADE)
     start_time = models.TimeField(
         help_text="When does this activity start", null=True, blank=True
     )

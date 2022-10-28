@@ -2,8 +2,16 @@ import graphene
 from graphql import GraphQLError
 from graphql_auth.decorators import login_required
 from graphene_file_upload.scalars import Upload
-from tracker.models import Section, Course, Topic, Resource
-from .types import SectionType, CourseType, TopicType, ResourceType
+from tracker.models import (
+    Section, Course,
+    Topic, Resource,
+    TimeTable, TimeTableActivity,
+    Todo, TodoItem)
+from .types import (
+    SectionType, CourseType,
+    TopicType, ResourceType,
+    TimeTableType, TimeTableActivityType,
+    TodoType)
 
 
 class SectionCreateUpdateMutation(graphene.Mutation):
@@ -198,9 +206,9 @@ class CreateUpdateResourceMuations(graphene.Mutation):
         description = graphene.String(
             description="""\
             How would you describe this resource or what is it for""")
-        pdf = Upload(
+        document = Upload(
             required=False,
-            description="upload pdf's here")
+            description="upload document's here")
         link = graphene.String(
             description="Url to some resource on the internet.")
         audio = Upload(
@@ -231,7 +239,8 @@ class CreateUpdateResourceMuations(graphene.Mutation):
                 if resource_id:
                     try:
                         resource = Resource.objects.get(pk=resource_id)
-                        resource.pdf = kwargs.get('pdf', resource.pdf)
+                        resource.document = kwargs.get(
+                            'document', resource.document)
                         resource.description = kwargs.get(
                             'description', resource.description)
                         resource.link = kwargs.get('link', resource.link)
@@ -258,7 +267,7 @@ class CreateUpdateResourceMuations(graphene.Mutation):
                     description=kwargs.get('description', None),
                     link=kwargs.get('link', None),
                     public=kwargs.get('public', False),
-                    pdf=kwargs.get('pdf', None),
+                    document=kwargs.get('document', None),
                     audio=kwargs.get('audio', None),
                     video=kwargs.get('video', None),
                     image=kwargs.get('image', None))
@@ -273,8 +282,225 @@ class CreateUpdateResourceMuations(graphene.Mutation):
             raise GraphQLError('Course `id` must be passed')
 
 
+class TimeTableCreateUpdateMutation(graphene.Mutation):
+    """
+    Creates or updates and returns a `TimeTable` object.
+    To update all you need to do is pass the time_table `id`.
+    """
+    time_table = graphene.Field(TimeTableType)
+    success = graphene.Boolean()
+
+    class Arguments:
+        time_table_id = graphene.ID(description="""\
+            If you want to perform an update, pass this""")
+        section_id = graphene.ID(
+            description="""\
+                If this timetable is for a particular
+                section then pass the section's `id`.""")
+        course_id = graphene.ID(description="""\
+                If this timetable is for a particular
+                course then pass the course's `id`.""")
+        topic_id = graphene.ID(description="""\
+                If this timetable is for a particular
+                topic then pass the topic's `id`.""")
+        description = graphene.String(
+            description="Describes what this timetable is for")
+        public = graphene.Boolean(
+            description="Should this time_table be made available to everyone")
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, **kwargs):
+        section_id = kwargs.get('section_id', None)
+        course_id = kwargs.get('course_id', None)
+        topic_id = kwargs.get('topic_id', None)
+        time_table_id = kwargs.get('time_table_id', None)
+        try:
+            section = Section.objects.get(
+                pk=section_id) if section_id else None
+            if section and section.user != info.context.user:
+                raise GraphQLError('You are not permitted to use this section')
+        except Section.DoesNotExist:
+            raise GraphQLError('The specified section does not exist')
+
+        try:
+            course = Course.objects.get(pk=course_id) if course_id else None
+            if course and course.user != info.context.user:
+                raise GraphQLError('You are not permitted to use this course')
+        except Course.DoesNotExist:
+            raise GraphQLError('The specified course does not exist')
+
+        try:
+            topic = Topic.objects.get(pk=topic_id) if topic_id else None
+            if topic and topic.user != info.context.user:
+                raise GraphQLError('You are not permitted to use this topic')
+        except Topic.DoesNotExist:
+            raise GraphQLError('The specified topic does not exist')
+
+        if time_table_id:
+            try:
+                t_table = TimeTable.objects.get(pk=time_table_id)
+                if t_table.user != info.context.user:
+                    raise GraphQLError(
+                        'You are not permitted to alter this time_table')
+                t_table.section = section if section_id else t_table.section
+                t_table.course = course if course_id else t_table.course
+                t_table.topic = topic if topic_id else t_table.topic
+                t_table.description = kwargs.get(
+                    'description', t_table.description)
+                t_table.public = kwargs.get('public', t_table.public)
+                t_table.user = info.context.user
+                t_table.save()
+                return TimeTableCreateUpdateMutation(
+                    time_table=t_table, success=True)
+            except TimeTable.DoesNotExist:
+                raise GraphQLError('The specified time_table was not found')
+        t_table = TimeTable(
+            course=course,
+            section=section,
+            topic=topic,
+            user=info.context.user,
+            description=kwargs.get('description', None),
+            public=kwargs.get('public', False))
+        t_table.save()
+        return TimeTableCreateUpdateMutation(
+            time_table=t_table, success=True)
+
+
+DaysOfTheWeekEnumSchema = graphene.Enum.from_enum(
+    TimeTableActivity.DaysOfTheWeek)
+
+
+class TimeTableActivityCreateUpdateMutation(graphene.Mutation):
+    """
+    Creates or updates and returns a `TimeTableActivity` object.
+    If you want to perform an update, all you need to do is pass in
+    the activity `id`.
+    """
+    activity = graphene.Field(TimeTableActivityType)
+    success = graphene.Boolean()
+
+    class Arguments:
+        time_table_id = graphene.ID(
+            required=True,
+            description="""\
+            The `id` of the time_table to which this activity belongs.""")
+        activity_id = graphene.ID(
+            description="""\
+            The `id` of the time_table activity you wish to update""")
+        start_time = graphene.Time(
+            required=True,
+            description="When does this activity begin")
+        end_time = graphene.Time(
+            required=True,
+            description="When does this activity end")
+        activity = graphene.String(
+            required=True,
+            description="The name of this activity")
+        description = graphene.String('A description of this activity.')
+        day = DaysOfTheWeekEnumSchema(
+            required=True, description="Day for this activity")
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, **kwargs):
+        time_table_id = kwargs.get('time_table_id', None)
+        activity_id = kwargs.get('activity_id', None)
+        if not time_table_id:
+            raise GraphQLError('time_table_id is required')
+        try:
+            time_table = TimeTable.objects.get(pk=time_table_id)
+            if time_table.user != info.context.user:
+                raise GraphQLError(
+                    'You are not permitted to use this time table')
+            if activity_id:
+                try:
+                    activity = TimeTableActivity.objects.get(pk=activity_id)
+                    if activity.user != info.context.user:
+                        raise GraphQLError(
+                            'You are not permitted to alter this activity')
+                    activity.start_time = kwargs.get(
+                        'start_time', activity.start_time)
+                    activity.end_time = kwargs.get(
+                        'end_time', activity.end_time)
+                    activity.activity = kwargs.get(
+                        'activity', activity.activity)
+                    activity.description = kwargs.get(
+                        'description', activity.description)
+                    activity.day = kwargs.get('day', activity.day)
+                    activity.timetable = time_table
+                    activity.user = info.context.user
+                    activity.save()
+                    return TimeTableActivityCreateUpdateMutation(
+                        activity=activity, success=True)
+                except TimeTableActivity.DoesNotExist:
+                    raise GraphQLError('The specified activity was not found')
+            activity = TimeTableActivity(
+                activity=kwargs.get('activity', None),
+                start_time=kwargs.get('start_time', None),
+                end_time=kwargs.get('end_time', None),
+                day=kwargs.get('day', None),
+                description=kwargs.get('description', None),
+                timetable=time_table,
+                user=info.context.user)
+            activity.save()
+            return TimeTableActivityCreateUpdateMutation(
+                activity=activity, success=True)
+        except TimeTable.DoesNotExist:
+            raise GraphQLError('The specified time_table was not found')
+
+
+class TodoListCreateUpdateMutation(graphene.Mutation):
+    """
+    Create or updates and return a `Todo` object.
+    To update all you need to do is pass the todo `id`.
+    """
+    todo = graphene.Field(TodoType)
+    success = True
+
+    class Arguments:
+        todo_id = graphene.ID(
+            description="Pass this if you want to perform an update")
+        name = graphene.String(
+            required=True,
+            description="What should this list be called")
+        description = graphene.String(
+            description="How would you describe this list or what is it for")
+        public = graphene.Boolean(
+            description="Should this list be made pulblic to everyone?")
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, **kwargs):
+        todo_id = kwargs.get('todo_id', None)
+        if todo_id:
+            try:
+                todo = Todo.objects.get(pk=todo_id)
+                if todo.user != info.context.user:
+                    raise GraphQLError(
+                        'You are not permitted to alter this list')
+                todo.name = kwargs.get('name', todo.name)
+                todo.description = kwargs.get('description', todo.description)
+                todo.public = kwargs.get('public', todo.public)
+                todo.user = info.context.user
+                todo.save()
+                return TodoListCreateUpdateMutation(todo=todo, success=True)
+            except Todo.DoesNotExist:
+                raise GraphQLError('The specified todo_list was not found')
+        todo = Todo(
+            name=kwargs.get('name', None),
+            description=kwargs.get('description', None),
+            public=kwargs.get('public', False),
+            user=info.context.user)
+        todo.save()
+        return TodoListCreateUpdateMutation(todo=todo, success=True)
+
+
 class TrackerMutation(graphene.ObjectType):
     create_update_section = SectionCreateUpdateMutation.Field()
     create_update_course = CourseCreateUpdateMutation.Field()
     create_update_topic = TopicCreateUpdateMutation.Field()
     create_update_resource = CreateUpdateResourceMuations.Field()
+    create_update_time_table = TimeTableCreateUpdateMutation.Field()
+    create_update_activity = TimeTableActivityCreateUpdateMutation.Field()
+    create_update_todo_list = TodoListCreateUpdateMutation.Field()
