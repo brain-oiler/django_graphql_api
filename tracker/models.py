@@ -85,14 +85,19 @@ class Resource(models.Model):
         help_text="Pdf resource for a course",
     )
     link = models.URLField(
-        help_text="Url to an online resource, video, document e.t.c")
+        help_text="Url to an online resource, video, document e.t.c",
+        null=True, blank=True)
     audio = models.FileField(
         null=True,
         blank=True,
         upload_to="uploads/audio",
         help_text="Audio resource like a lecture recording",
     )
-    video = models.FileField(help_text="Video resource for a course")
+    video = models.FileField(
+        null=True,
+        blank=True,
+        upload_to="uploads/video",
+        help_text="Video resource for a course")
     image = models.ImageField(
         upload_to="uploads/images",
         help_text="Image resource for a course.",
@@ -102,7 +107,7 @@ class Resource(models.Model):
     public = models.BooleanField(default=False)
 
     def get_url(self, obj):
-        if hasattr(obj, 'url'):
+        if obj and hasattr(obj, 'url'):
             return obj.url
         return None
 

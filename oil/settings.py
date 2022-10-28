@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "graphql_jwt.refresh_token.apps.RefreshTokenConfig",
+    "corsheaders",
     "graphql_auth",
     "django_filters",
     "accounts",
@@ -49,6 +50,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -158,3 +160,4 @@ GRAPHQL_AUTH = {
     'LOGIN_ALLOWED_FIELDS': ['email'],
     'REGISTER_MUTATION_FIELDS': ['email', 'username']
 }
+CORS_ALLOW_ALL_ORIGINS = True

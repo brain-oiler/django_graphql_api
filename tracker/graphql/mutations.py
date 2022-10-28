@@ -1,8 +1,9 @@
 import graphene
 from graphql import GraphQLError
 from graphql_auth.decorators import login_required
-from tracker.models import Section, Course, Topic
-from .types import SectionType, CourseType, TopicType
+from graphene_file_upload.scalars import Upload
+from tracker.models import Section, Course, Topic, Resource
+from .types import SectionType, CourseType, TopicType, ResourceType
 
 
 class SectionCreateUpdateMutation(graphene.Mutation):
@@ -86,7 +87,7 @@ class CourseCreateUpdateMutation(graphene.Mutation):
     @login_required
     def mutate(cls, root, info, **kwargs):
         section_id = kwargs.get('section_id', None)
-        couse_id = kwargs.get('course_id', None)
+        course_id = kwargs.get('course_id', None)
         section = None
         if section_id:
             try:
@@ -96,9 +97,9 @@ class CourseCreateUpdateMutation(graphene.Mutation):
                         'You are not authorised to use this section')
             except Section.DoesNotExist:
                 raise GraphQLError('Specified Section was not found')
-        if couse_id:
+        if course_id:
             try:
-                course = Course.objects.get(pk=couse_id)
+                course = Course.objects.get(pk=course_id)
                 if course.user != info.context.user:
                     raise GraphQLError(
                         'You are not authorised to edit this course')
@@ -169,17 +170,111 @@ class TopicCreateUpdateMutation(graphene.Mutation):
                 except Topic.DoesNotExist:
                     raise GraphQLError('The specified topic was not found')
             topic = Topic(
-                    name=kwargs.get('name', None),
-                    description=kwargs.get('description', None),
-                    course=course,
-                    user=info.context.user)
+                name=kwargs.get('name', None),
+                description=kwargs.get('description', None),
+                course=course,
+                user=info.context.user)
             topic.save()
             return TopicCreateUpdateMutation(topic=topic, success=True)
         except Course.DoesNotExist:
             raise GraphQLError('The specified course was not found')
 
 
+class CreateUpdateResourceMuations(graphene.Mutation):
+    """
+    Creates or updates and returns a `Resource` object for a specific course.\n
+    To update all you need to do is pass in the resource `id`.
+    """
+    resource = graphene.Field(ResourceType)
+    success = graphene.Boolean()
+
+    class Arguments:
+        course_id = graphene.ID(
+            required=True,
+            description="`ID` for the course to which this resource belongs.")
+        resource_id = graphene.ID(
+            description="""The id of the target resource.\n
+            Only pass this if you want to perform a update to a resource""")
+        description = graphene.String(
+            description="""\
+            How would you describe this resource or what is it for""")
+        pdf = Upload(
+            required=False,
+            description="upload pdf's here")
+        link = graphene.String(
+            description="Url to some resource on the internet.")
+        audio = Upload(
+            required=False,
+            description="Audio resource like a lecture recording")
+        video = Upload(
+            required=False,
+            description="Video resource, perhaps a lecture video recording")
+        image = Upload(
+            required=False,
+            description="Images like a note snapshot etc go here")
+        public = graphene.Boolean(
+            description="""\
+            Should this resource be made puplic and available to everyone.""")
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, **kwargs):
+        course_id = kwargs.get('course_id', None)
+        resource_id = kwargs.get('resource_id', None)
+
+        if course_id:
+            try:
+                course = Course.objects.get(pk=course_id)
+                if course.user != info.context.user:
+                    raise GraphQLError(
+                        'You do not have permissions to use this course')
+                if resource_id:
+                    try:
+                        resource = Resource.objects.get(pk=resource_id)
+                        resource.pdf = kwargs.get('pdf', resource.pdf)
+                        resource.description = kwargs.get(
+                            'description', resource.description)
+                        resource.link = kwargs.get('link', resource.link)
+                        resource.audio = kwargs.get(
+                            'audio', resource.audio)
+                        resource.video = kwargs.get(
+                            'video', resource.video)
+                        resource.image = kwargs.get(
+                            'image', resource.image)
+                        resource.puplic = kwargs.get(
+                            'public', resource.public)
+                        resource.course = course
+                        resource.creator = info.context.user
+                        resource.save()
+                        return CreateUpdateResourceMuations(
+                            resource=resource, success=True)
+                    except Resource.DoesNotExist:
+                        raise GraphQLError(
+                            'The specified resource was not found')
+                print('were here')
+                resource = Resource.objects.create(
+                    course=course,
+                    creator=info.context.user,
+                    description=kwargs.get('description', None),
+                    link=kwargs.get('link', None),
+                    public=kwargs.get('public', False),
+                    pdf=kwargs.get('pdf', None),
+                    audio=kwargs.get('audio', None),
+                    video=kwargs.get('video', None),
+                    image=kwargs.get('image', None))
+                resource.save()
+                print(resource)
+                return CreateUpdateResourceMuations(
+                    resource=resource, success=True)
+            except Course.DoesNotExist:
+                raise GraphQLError(
+                    'Course with the specified `id` was not found')
+        else:
+            raise GraphQLError('Course `id` must be passed')
+
+
 class TrackerMutation(graphene.ObjectType):
     create_update_section = SectionCreateUpdateMutation.Field()
     create_update_course = CourseCreateUpdateMutation.Field()
     create_update_topic = TopicCreateUpdateMutation.Field()
+    create_update_resource = CreateUpdateResourceMuations.Field()
