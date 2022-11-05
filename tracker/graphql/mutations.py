@@ -11,7 +11,7 @@ from .types import (
     SectionType, CourseType,
     TopicType, ResourceType,
     TimeTableType, TimeTableActivityType,
-    TodoType)
+    TodoType, TodoItemType)
 
 
 class SectionCreateUpdateMutation(graphene.Mutation):
@@ -496,6 +496,73 @@ class TodoListCreateUpdateMutation(graphene.Mutation):
         return TodoListCreateUpdateMutation(todo=todo, success=True)
 
 
+class TodoItemCreateUpdateMutation(graphene.Mutation):
+    """
+    Creates or updates and returns a `TodoItem` object.\n
+    To update all you need to do is pass the item `id`.
+    """
+    item = graphene.Field(TodoItemType)
+    success = graphene.Boolean()
+
+    class Arguments:
+        todo_list_id = graphene.ID(
+            required=True,
+            description="`id` of the list to which this item belong.")
+        item_id = graphene.ID(
+            description="If you want to perform an update pass this.")
+        start_time = graphene.Time(
+            description="""\
+            What time would you like to start this activity.
+            Not required.""")
+        end_time = graphene.Time(
+            description="""
+            When would you like to end this activity. Not required
+            """)
+        activity = graphene.String(
+            description="What is this activity")
+        description = graphene.String(
+            description="What is this activity for.")
+        day = graphene.Date(
+            description="When do you plan to carry out this activity")
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, **kwargs):
+        todo_list_id = kwargs.get('todo_list_id')
+        item_id = kwargs.get('item_id', None)
+        try:
+            todo_list = Todo.objects.get(pk=todo_list_id)
+            if todo_list.user != info.context.user:
+                raise GraphQLError(
+                    'You do not have permission to alter this list')
+            if item_id:
+                try:
+                    item = TodoItem.objects.get(pk=item_id)
+                    item.todo_list = todo_list
+                    item.start_time = kwargs.get('start_time', item.start_time)
+                    item.end_time = kwargs.get('end_time', item.end_time)
+                    item.activity = kwargs.get('activity', item.activity)
+                    item.description = kwargs.get(
+                        'description', item.description)
+                    item.day = kwargs.get('day', item.day)
+                    item.save()
+                    return TodoItemCreateUpdateMutation(
+                        item=item, success=True)
+                except TodoItem.DoesNotExist:
+                    raise GraphQLError('The specified todo_item was not found')
+            item = TodoItem(
+                todo_list=todo_list,
+                start_time=kwargs.get('start_time', None),
+                end_time=kwargs.get('end_time', None),
+                activity=kwargs.get('activity', None),
+                description=kwargs.get('description', None),
+                day=kwargs.get('day', None))
+            item.save()
+            return TodoItemCreateUpdateMutation(item=item, success=True)
+        except Todo.DoesNotExist:
+            raise GraphQLError('The specified todo_list was not found')
+
+
 class TrackerMutation(graphene.ObjectType):
     create_update_section = SectionCreateUpdateMutation.Field()
     create_update_course = CourseCreateUpdateMutation.Field()
@@ -504,3 +571,4 @@ class TrackerMutation(graphene.ObjectType):
     create_update_time_table = TimeTableCreateUpdateMutation.Field()
     create_update_activity = TimeTableActivityCreateUpdateMutation.Field()
     create_update_todo_list = TodoListCreateUpdateMutation.Field()
+    create_update_todo_item = TodoItemCreateUpdateMutation.Field()

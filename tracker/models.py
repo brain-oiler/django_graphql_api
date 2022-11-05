@@ -20,12 +20,16 @@ class Section(models.Model):
         blank=True,
     )
     date_added = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
     name = models.CharField(
         max_length=255, help_text="Name or Level for this section")
     description = models.TextField(
         help_text="A descriptive summary for this section",
         null=True, blank=True
     )
+
+    class Meta:
+        ordering = ['date_added', 'last_updated']
 
 
 class Course(models.Model):
@@ -51,6 +55,11 @@ class Course(models.Model):
         null=True, blank=True
     )
     progress = models.IntegerField(null=True, blank=True)
+    date_added = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['date_added', 'last_updated']
 
 
 class Topic(models.Model):
@@ -67,6 +76,11 @@ class Topic(models.Model):
         help_text="Short summary of the topic, or it's meanning",
         null=True, blank=True
     )
+    date_added = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['date_added', 'last_updated']
 
 
 class Resource(models.Model):
@@ -113,6 +127,11 @@ class Resource(models.Model):
         blank=True,
     )
     public = models.BooleanField(default=False)
+    date_added = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['date_added', 'last_updated']
 
     def get_url(self, obj):
         if obj and hasattr(obj, 'url'):
@@ -154,6 +173,11 @@ class TimeTable(models.Model):
         help_text="Describes what this timetable is for", null=True, blank=True
     )
     public = models.BooleanField(default=False)
+    date_added = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['date_added', 'last_updated']
 
 
 class TimeTableActivity(models.Model):
@@ -187,6 +211,11 @@ class TimeTableActivity(models.Model):
         max_length=10, help_text="Day for this activity",
         choices=DaysOfTheWeek.choices
     )
+    date_added = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['date_added', 'last_updated']
 
 
 class Todo(models.Model):
@@ -199,6 +228,11 @@ class Todo(models.Model):
         null=True, blank=True, help_text="What is this list for."
     )
     public = models.BooleanField(default=False)
+    date_added = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['date_added', 'last_updated']
 
 
 class TodoItem(models.Model):
@@ -218,3 +252,8 @@ class TodoItem(models.Model):
     )
     day = models.DateField(
         help_text="Day of this activity", null=True, blank=True)
+    date_added = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['date_added', 'last_updated']

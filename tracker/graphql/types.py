@@ -21,20 +21,6 @@ class SectionType(DjangoObjectType):
         interface = (graphene.relay.Node, )
 
 
-class CourseType(DjangoObjectType):
-    class Meta:
-        model: Model = Course
-        fields: (str) = (
-            "name", "start_date", "end_date",
-            "description", "section", "progress", "id")
-        filter_fields = {
-            'start_date': ['exact'],
-            'end_date': ['exact'],
-            'name': ['exact', 'icontatins', 'istartswith']
-        }
-        interface = (graphene.relay.Node, )
-
-
 class TopicType(DjangoObjectType):
     class Meta:
         model: Model = Topic
@@ -74,6 +60,25 @@ class ResourceType(DjangoObjectType):
 
     def resolve_video(self, info):
         return self.get_url(self.video)
+
+
+class CourseType(DjangoObjectType):
+    resources = graphene.List(ResourceType)
+
+    class Meta:
+        model: Model = Course
+        fields: (str) = (
+            "name", "start_date", "end_date",
+            "description", "section", "progress", "id")
+        filter_fields = {
+            'start_date': ['exact'],
+            'end_date': ['exact'],
+            'name': ['exact', 'icontatins', 'istartswith']
+        }
+        interface = (graphene.relay.Node, )
+
+    def resolve_resources(self, info):
+        return Resource.objects.filter(course=self)
 
 
 class TimeTableActivityType(DjangoObjectType):
