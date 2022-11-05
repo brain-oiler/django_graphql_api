@@ -21,20 +21,6 @@ class SectionType(DjangoObjectType):
         interface = (graphene.relay.Node, )
 
 
-class CourseType(DjangoObjectType):
-    class Meta:
-        model: Model = Course
-        fields: (str) = (
-            "name", "start_date", "end_date",
-            "description", "section", "progress", "id")
-        filter_fields = {
-            'start_date': ['exact'],
-            'end_date': ['exact'],
-            'name': ['exact', 'icontatins', 'istartswith']
-        }
-        interface = (graphene.relay.Node, )
-
-
 class TopicType(DjangoObjectType):
     class Meta:
         model: Model = Topic
@@ -48,14 +34,14 @@ class TopicType(DjangoObjectType):
 
 
 class ResourceType(DjangoObjectType):
-    pdf = graphene.String()
+    document = graphene.String()
     audio = graphene.String()
     image = graphene.String()
     video = graphene.String()
 
     class Meta:
         model: Model = Resource
-        fields: (str) = ("creator", "description", "course", "link")
+        fields: (str) = ("creator", "description", "course", "link", "id")
         filter_fields = {
             'creator': ['exact'],
             'course': ['exact'],
@@ -63,8 +49,8 @@ class ResourceType(DjangoObjectType):
         }
         interface = (graphene.relay.Node, )
 
-    def resolve_pdf(self, info):
-        return self.get_url(self.pdf)
+    def resolve_document(self, info):
+        return self.get_url(self.document)
 
     def resolve_audio(self, info):
         return self.get_url(self.audio)
@@ -76,16 +62,23 @@ class ResourceType(DjangoObjectType):
         return self.get_url(self.video)
 
 
-class TimeTableType(DjangoObjectType):
+class CourseType(DjangoObjectType):
+    resources = graphene.List(ResourceType)
+
     class Meta:
-        model: Model = TimeTable
-        fields: (str) = ("section", "course", "topic", "description")
+        model: Model = Course
+        fields: (str) = (
+            "name", "start_date", "end_date",
+            "description", "section", "progress", "id")
         filter_fields = {
-            'section': ['exact'],
-            'course': ['exact'],
-            'topic': ['exact', 'icontatins', 'istartswith']
+            'start_date': ['exact'],
+            'end_date': ['exact'],
+            'name': ['exact', 'icontatins', 'istartswith']
         }
         interface = (graphene.relay.Node, )
+
+    def resolve_resources(self, info):
+        return Resource.objects.filter(course=self)
 
 
 class TimeTableActivityType(DjangoObjectType):
@@ -93,7 +86,7 @@ class TimeTableActivityType(DjangoObjectType):
         model: Model = TimeTableActivity
         fields: (str) = (
             "timetable", "start_time", "end_time", "activity",
-            "description", "day")
+            "description", "day", "id")
         filter_fields = {
             'activity': ['exact', 'icontatins', 'istartswith'],
             'description': ['exact', 'icontatins', 'istartswith']
@@ -101,22 +94,28 @@ class TimeTableActivityType(DjangoObjectType):
         interface = (graphene.relay.Node, )
 
 
-class TodoType(DjangoObjectType):
+class TimeTableType(DjangoObjectType):
+    activities = graphene.List(TimeTableActivityType)
+
     class Meta:
-        model: Model = Todo
-        fields: (str) = ("name", "description")
+        model: Model = TimeTable
+        fields: (str) = ("section", "course", "topic", "description", "id")
         filter_fields = {
-            'name': ['exact', 'icontatins', 'istartswith'],
-            'description': ['exact', 'icontatins', 'istartswith']
+            'section': ['exact'],
+            'course': ['exact'],
+            'topic': ['exact', 'icontatins', 'istartswith']
         }
         interface = (graphene.relay.Node, )
+
+    def resolve_activities(self, info):
+        return TimeTableActivity.objects.filter(timetable=self)
 
 
 class TodoItemType(DjangoObjectType):
     class Meta:
         model: Model = TodoItem
         fields: (str) = (
-            "start_time", "end_time", "activity", "description", "day")
+            "start_time", "end_time", "activity", "description", "day", "id")
         filter_fields = {
             'activity': ['exact', 'icontatins', 'istartswith'],
             'description': ['exact', 'icontatins', 'istartswith'],
@@ -125,3 +124,19 @@ class TodoItemType(DjangoObjectType):
             'end_date': ['exact']
         }
         interface = (graphene.relay.Node, )
+
+
+class TodoType(DjangoObjectType):
+    items = graphene.List(TodoItemType)
+
+    class Meta:
+        model: Model = Todo
+        fields: (str) = ("name", "description", "id")
+        filter_fields = {
+            'name': ['exact', 'icontatins', 'istartswith'],
+            'description': ['exact', 'icontatins', 'istartswith']
+        }
+        interface = (graphene.relay.Node, )
+
+    def resolve_items(self, info):
+        return TodoItem.objects.filter(todo_list=self)
