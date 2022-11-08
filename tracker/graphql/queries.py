@@ -30,6 +30,12 @@ class TrackerQuery(graphene.ObjectType):
     user_resources = graphene.List(
         types.ResourceType,
         description="Resturs all topics created by the logged in user")
+    get_resources_by_course_id = graphene.List(
+        types.ResourceType,
+        course_id=graphene.ID(
+            required=True,
+            description="the course id"),
+        description="Returns resources for the course with the specified `id`")
     public_resources = graphene.List(
         types.ResourceType,
         description="Returns all publicly available resources")
@@ -78,6 +84,17 @@ class TrackerQuery(graphene.ObjectType):
     @login_required
     def resolve_user_resources(root, info, **kwargs):
         return Resource.objects.filter(creator=info.context.user)
+
+    @login_required
+    def resolve_get_resources_by_course_id(root, info, course_id, **kwargs):
+        try:
+            course = Course.objects.get(pk=course_id)
+            if not course.user == info.context.user:
+                raise GraphQLError(
+                    'You are not authorised to perform this action')
+            return Resource.objects.filter(course=course)
+        except Course.DoesNotExist:
+            raise GraphQLError('The specified course was not found')
 
     @login_required
     def resolve_public_resources(root, info, **kwargs):
