@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import FileExtensionValidator
-from cloudinary_storage.validators import validate_video
 from cloudinary_storage.storage import (
     MediaCloudinaryStorage,
     VideoMediaCloudinaryStorage)
@@ -121,7 +120,6 @@ class Resource(models.Model):
         null=True,
         blank=True,
         storage=VideoMediaCloudinaryStorage,
-        validators=[validate_video],
         upload_to="uploads/video",
         help_text="Video resource for a course")
     image = models.ImageField(
