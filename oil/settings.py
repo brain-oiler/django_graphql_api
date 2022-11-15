@@ -85,21 +85,17 @@ WSGI_APPLICATION = "oil.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-DATABASE_URL = config('DATABASE_URL')
 
-DATABASEs = {
-    "default": dj_database_url.config(default=DATABASE_URL, conn_max_age=1800),
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": config('DB_NAME'),
+        "USER": config('DB_USER'),
+        "PASSWORD": config('DB_PASSWORD'),
+        "HOST": config('DB_HOST'),
+        "PORT": config('DB_PORT')
+    }
 }
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": config('DB_NAME'),
-#         "USER": config('DB_USER'),
-#         "PASSWORD": config('DB_PASSWORD'),
-#         "HOST": config('DB_HOST'),
-#         "PORT": config('DB_PORT')
-#     }
-# }
 
 
 # Password validation
