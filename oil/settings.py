@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "graphql_jwt.refresh_token.apps.RefreshTokenConfig",
+    'cloudinary_storage',
+    'cloudinary',
     "corsheaders",
     "graphql_auth",
     "django_filters",
@@ -148,7 +150,7 @@ AUTHENTICATION_BACKENDS = [
 GRAPHQL_JWT = {
     "JWT_VERIFY_EXPIRATION": True,
     "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
-    "JWT_EXPIRATION_DELTA": timedelta(hours=1),
+    "JWT_EXPIRATION_DELTA": timedelta(days=1),
     "JWT_REFRESH_EXPIRATION_DELTA": timedelta(days=7),
     "JWT_ALLOW_ANY_CLASSES": [
         "graphql_auth.mutations.Register",
@@ -167,3 +169,9 @@ GRAPHQL_AUTH = {
 }
 CORS_ALLOW_ALL_ORIGINS = True
 USE_TZ = True
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': config('CLOUDINARY_NAME'),
+    'API_KEY': config('CLOUDINARY_API_KEY'),
+    'API_SECRET': config('CLOUDINARY_API_SECRET')
+}
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.RawMediaCloudinaryStorage'

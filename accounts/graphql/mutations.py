@@ -5,6 +5,7 @@ from graphene_file_upload.scalars import Upload
 from graphql_auth.decorators import login_required
 from accounts.models import Profile
 from accounts.graphql.types import ProfileType
+from graphql_auth.types import ExpectedErrorType
 
 
 class ProfileCreateUpdateMutation(graphene.Mutation):
@@ -14,6 +15,7 @@ class ProfileCreateUpdateMutation(graphene.Mutation):
     """
     profile = graphene.Field(ProfileType)
     success = graphene.Boolean()
+    errors = graphene.Field(ExpectedErrorType)
 
     class Arguments:
         profile_id = graphene.ID(

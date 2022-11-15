@@ -1,6 +1,10 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import FileExtensionValidator
+from cloudinary_storage.validators import validate_video
+from cloudinary_storage.storage import (
+    MediaCloudinaryStorage,
+    VideoMediaCloudinaryStorage)
 # Create your models here.
 
 User = get_user_model()
@@ -98,7 +102,7 @@ class Resource(models.Model):
         blank=True,
         validators=[FileExtensionValidator(
             allowed_extensions=[
-                'pdf', 'doc', 'docx', 'xlsx', 'xls', 'txt'])],
+                'pdf'])],
         upload_to="uploads/documents",
         help_text="Document resource for a course",
     )
@@ -116,11 +120,12 @@ class Resource(models.Model):
     video = models.FileField(
         null=True,
         blank=True,
-        validators=[FileExtensionValidator(
-            allowed_extensions=['mp4', 'mov', 'wmv', 'avi', 'mkv'])],
+        storage=VideoMediaCloudinaryStorage,
+        validators=[validate_video],
         upload_to="uploads/video",
         help_text="Video resource for a course")
     image = models.ImageField(
+        storage=MediaCloudinaryStorage(),
         upload_to="uploads/images",
         help_text="Image resource for a course.",
         null=True,
