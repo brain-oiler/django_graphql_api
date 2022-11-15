@@ -41,7 +41,8 @@ class ResourceType(DjangoObjectType):
 
     class Meta:
         model: Model = Resource
-        fields: (str) = ("creator", "description", "course", "link", "id")
+        fields: (str) = (
+            "creator", "description", "course", "link", "id", "public")
         filter_fields = {
             'creator': ['exact'],
             'course': ['exact'],

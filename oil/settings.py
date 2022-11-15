@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "graphql_jwt.refresh_token.apps.RefreshTokenConfig",
+    'cloudinary_storage',
+    'cloudinary',
     "corsheaders",
     "graphql_auth",
     "django_filters",
@@ -167,3 +169,9 @@ GRAPHQL_AUTH = {
 }
 CORS_ALLOW_ALL_ORIGINS = True
 USE_TZ = True
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': config('CLOUDINARY_NAME'),
+    'API_KEY': config('CLOUDINARY_API_KEY'),
+    'API_SECRET': config('CLOUDINARY_API_SECRET')
+}
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.RawMediaCloudinaryStorage'

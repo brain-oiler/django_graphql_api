@@ -1,6 +1,7 @@
 import graphene
 from graphql import GraphQLError
 from graphql_auth.decorators import login_required
+from graphql_auth.types import ExpectedErrorType
 from graphene_file_upload.scalars import Upload
 from tracker.models import (
     Section, Course,
@@ -21,6 +22,7 @@ class SectionCreateUpdateMutation(graphene.Mutation):
     """
     section = graphene.Field(SectionType)
     success = graphene.Boolean()
+    errors = graphene.Field(ExpectedErrorType)
 
     class Arguments:
         section_id = graphene.ID()
@@ -66,6 +68,34 @@ class SectionCreateUpdateMutation(graphene.Mutation):
         return SectionCreateUpdateMutation(section=section, success=True)
 
 
+class SectionDeleteMutation(graphene.Mutation):
+    """
+    Deletes a section with the specified `id`,
+    and return a success message if successful
+    """
+    success = graphene.Boolean()
+    errors = graphene.Field(ExpectedErrorType)
+
+    class Arguments:
+        section_id = graphene.ID(
+            required=True,
+            description="The `id` of the section to be deleted.")
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, **kwargs):
+        section_id = kwargs.get('section_id', None)
+        try:
+            section = Section.objects.get(pk=section_id)
+            if not section.user == info.context.user:
+                raise GraphQLError(
+                    'You are not authorised to delete this section')
+            section.delete()
+            return SectionDeleteMutation(success=True)
+        except Section.DoesNotExist:
+            raise GraphQLError('The specified section was not found')
+
+
 class CourseCreateUpdateMutation(graphene.Mutation):
     """
     Creates, updates and returns a `Course` object.\n
@@ -73,6 +103,7 @@ class CourseCreateUpdateMutation(graphene.Mutation):
     """
     course = graphene.Field(CourseType)
     success = graphene.Boolean()
+    errors = graphene.Field(ExpectedErrorType)
 
     class Arguments:
         course_id = graphene.ID(
@@ -132,6 +163,34 @@ class CourseCreateUpdateMutation(graphene.Mutation):
         return CourseCreateUpdateMutation(course=course, success=True)
 
 
+class CourseDeleteMutation(graphene.Mutation):
+    """
+    Deletes a course with the specified `id`,
+    and returns a success message if successful.
+    """
+    success = graphene.Boolean()
+    errors = graphene.Field(ExpectedErrorType)
+
+    class Arguments:
+        course_id = graphene.ID(
+            required=True,
+            description="The `id` of the course to be deleted.")
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, **kwargs):
+        course_id = kwargs.get('course_id')
+        try:
+            course = Course.objects.get(pk=course_id)
+            if not course.user == info.context.user:
+                raise GraphQLError(
+                    'You are not authorised to delete this course')
+            course.delete()
+            return CourseDeleteMutation(success=True)
+        except Course.DoesNotExist:
+            raise GraphQLError('The specified course was not found')
+
+
 class TopicCreateUpdateMutation(graphene.Mutation):
     """
     Creates, updates and returns a `Topic` object for a particular course.
@@ -140,6 +199,7 @@ class TopicCreateUpdateMutation(graphene.Mutation):
     """
     topic = graphene.Field(TopicType)
     success = graphene.Boolean()
+    errors = graphene.Field(ExpectedErrorType)
 
     class Arguments:
         name = graphene.String(
@@ -188,6 +248,34 @@ class TopicCreateUpdateMutation(graphene.Mutation):
             raise GraphQLError('The specified course was not found')
 
 
+class TopicDeleteMutation(graphene.Mutation):
+    """
+    Deletes a topic with the specified `id`,
+    and returns a success message if successful.
+    """
+    success = graphene.Boolean()
+    errors = graphene.Field(ExpectedErrorType)
+
+    class Arguments:
+        topic_id = graphene.ID(
+            required=True,
+            description="The `id` of the topic to be deleted.")
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, **kwargs):
+        topic_id = kwargs.get('topic_id')
+        try:
+            topic = Topic.objects.get(pk=topic_id)
+            if not topic.user == info.context.user:
+                raise GraphQLError(
+                    'You are not authorised to delete this topic.')
+            topic.delete()
+            return TopicDeleteMutation(success=True)
+        except Topic.DoesNotExist:
+            raise GraphQLError('The specified topic was not found')
+
+
 class CreateUpdateResourceMuations(graphene.Mutation):
     """
     Creates or updates and returns a `Resource` object for a specific course.\n
@@ -195,6 +283,7 @@ class CreateUpdateResourceMuations(graphene.Mutation):
     """
     resource = graphene.Field(ResourceType)
     success = graphene.Boolean()
+    errors = graphene.Field(ExpectedErrorType)
 
     class Arguments:
         course_id = graphene.ID(
@@ -282,6 +371,34 @@ class CreateUpdateResourceMuations(graphene.Mutation):
             raise GraphQLError('Course `id` must be passed')
 
 
+class ResourceDeleteMuation(graphene.Mutation):
+    """
+    Deletes a resource  with the specified `id`,
+    and returns a success message if successful.
+    """
+    success = graphene.Boolean()
+    errors = graphene.Field(ExpectedErrorType)
+
+    class Arguments:
+        resource_id = graphene.ID(
+            required=True,
+            description="The `id` of the resource to be deleted")
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, **kwargs):
+        resource_id = kwargs.get('resource_id')
+        try:
+            resource = Resource.objects.get(pk=resource_id)
+            if not resource.creator == info.context.user:
+                raise GraphQLError(
+                    'You are not authorised to delete this resource')
+            resource.delete()
+            return ResourceDeleteMuation(success=True)
+        except Resource.DoesNotExist:
+            raise GraphQLError('The specified resource was not found.')
+
+
 class TimeTableCreateUpdateMutation(graphene.Mutation):
     """
     Creates or updates and returns a `TimeTable` object.
@@ -289,6 +406,7 @@ class TimeTableCreateUpdateMutation(graphene.Mutation):
     """
     time_table = graphene.Field(TimeTableType)
     success = graphene.Boolean()
+    errors = graphene.Field(ExpectedErrorType)
 
     class Arguments:
         time_table_id = graphene.ID(description="""\
@@ -367,6 +485,34 @@ class TimeTableCreateUpdateMutation(graphene.Mutation):
             time_table=t_table, success=True)
 
 
+class TimeTableDeleteMutation(graphene.Mutation):
+    """
+    Deletes a timetable with the specified `id`,
+    and returns a success message if successful.
+    """
+    success = graphene.Boolean()
+    errors = graphene.Field(ExpectedErrorType)
+
+    class Arguments:
+        time_table_id = graphene.ID(
+            required=True,
+            description='The `id` of the timetable to be deleted')
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, **kwargs):
+        time_table_id = kwargs.get('time_table_id')
+        try:
+            time_table = TimeTable.objects.get(pk=time_table_id)
+            if not time_table.user == info.context.user:
+                raise GraphQLError(
+                    'You are not authorised to delete this timetable')
+            time_table.delete()
+            return TimeTableDeleteMutation(success=True)
+        except TimeTable.DoesNotExist:
+            raise GraphQLError('The specified timetable was not found')
+
+
 DaysOfTheWeekEnumSchema = graphene.Enum.from_enum(
     TimeTableActivity.DaysOfTheWeek)
 
@@ -379,6 +525,7 @@ class TimeTableActivityCreateUpdateMutation(graphene.Mutation):
     """
     activity = graphene.Field(TimeTableActivityType)
     success = graphene.Boolean()
+    errors = graphene.Field(ExpectedErrorType)
 
     class Arguments:
         time_table_id = graphene.ID(
@@ -450,13 +597,43 @@ class TimeTableActivityCreateUpdateMutation(graphene.Mutation):
             raise GraphQLError('The specified time_table was not found')
 
 
+class TimeTableActivityDeleteMutation(graphene.Mutation):
+    """
+    Deletes a timetable activity with the specified activity `id`,
+    and returns a success message if successful.
+    """
+    success = graphene.Boolean()
+    errors = graphene.Field(ExpectedErrorType)
+
+    class Arguments:
+        activity_id = graphene.ID(
+            required=True,
+            description='The `id` of the activity to be deleted')
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, **kwargs):
+        activity_id = kwargs.get('activity_id')
+        try:
+            activity = TimeTableActivity.objects.get(pk=activity_id)
+            if not activity.user == info.context.user:
+                raise GraphQLError(
+                    'You are not authorised to delete this activity.')
+            activity.delete()
+            return TimeTableActivityDeleteMutation(success=True)
+        except TimeTableActivity.DoesNotExist:
+            raise GraphQLError(
+                'The specified activity was not found.')
+
+
 class TodoListCreateUpdateMutation(graphene.Mutation):
     """
     Create or updates and return a `Todo` object.
     To update all you need to do is pass the todo `id`.
     """
     todo = graphene.Field(TodoType)
-    success = True
+    success = graphene.Boolean()
+    errors = graphene.Field(ExpectedErrorType)
 
     class Arguments:
         todo_id = graphene.ID(
@@ -496,6 +673,34 @@ class TodoListCreateUpdateMutation(graphene.Mutation):
         return TodoListCreateUpdateMutation(todo=todo, success=True)
 
 
+class TodoListDeleteMutation(graphene.Mutation):
+    """
+    Deletes a todo_list with the specified todo_list `id`,
+    and returns a success message if successful.
+    """
+    success = graphene.Boolean()
+    errors = graphene.Field(ExpectedErrorType)
+
+    class Arguments:
+        todo_list_id = graphene.ID(
+            required=True,
+            description="The `id` of the todo list to be deleted")
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, **kwargs):
+        todo_list_id = kwargs.get('todo_list_id')
+        try:
+            todo_list = Todo.objects.get(pk=todo_list_id)
+            if not todo_list.user == info.context.user:
+                raise GraphQLError(
+                    'You are not authorised to delete this todo')
+            todo_list.delete()
+            return TodoListDeleteMutation(success=True)
+        except Todo.DoesNotExist:
+            raise GraphQLError('The specified todo was not found')
+
+
 class TodoItemCreateUpdateMutation(graphene.Mutation):
     """
     Creates or updates and returns a `TodoItem` object.\n
@@ -503,6 +708,7 @@ class TodoItemCreateUpdateMutation(graphene.Mutation):
     """
     item = graphene.Field(TodoItemType)
     success = graphene.Boolean()
+    errors = graphene.Field(ExpectedErrorType)
 
     class Arguments:
         todo_list_id = graphene.ID(
@@ -563,6 +769,33 @@ class TodoItemCreateUpdateMutation(graphene.Mutation):
             raise GraphQLError('The specified todo_list was not found')
 
 
+class TodoItemDeleteMutation(graphene.Mutation):
+    """
+    Deletes a todo item with the specified item `id`,
+    and returns a success message if successful.
+    """
+    success = graphene.Boolean()
+    errors = graphene.Field(ExpectedErrorType)
+
+    class Arguments:
+        item_id = graphene.ID(
+            required=True,
+            description="The `id` of the todo item to be deleted")
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, **kwargs):
+        item_id = kwargs.get('item_id')
+        try:
+            item = TodoItem.objects.get(pk=item_id)
+            if not item.user == info.context.user:
+                raise GraphQLError('You are not permitted to delete this item')
+            item.delete()
+            return TodoItemDeleteMutation(success=True)
+        except TodoItem.DoesNotExist:
+            raise GraphQLError('The specified item was not found')
+
+
 class TrackerMutation(graphene.ObjectType):
     create_update_section = SectionCreateUpdateMutation.Field()
     create_update_course = CourseCreateUpdateMutation.Field()
@@ -572,3 +805,11 @@ class TrackerMutation(graphene.ObjectType):
     create_update_activity = TimeTableActivityCreateUpdateMutation.Field()
     create_update_todo_list = TodoListCreateUpdateMutation.Field()
     create_update_todo_item = TodoItemCreateUpdateMutation.Field()
+    delete_section = SectionDeleteMutation.Field()
+    delete_course = CourseDeleteMutation.Field()
+    delete_topic = TopicDeleteMutation.Field()
+    delete_resource = ResourceDeleteMuation.Field()
+    delete_timetable = TimeTableDeleteMutation.Field()
+    delete_timetable_activity = TimeTableActivityDeleteMutation.Field()
+    delete_todo_list = TodoListDeleteMutation.Field()
+    delete_todo_item = TodoItemDeleteMutation.Field()
