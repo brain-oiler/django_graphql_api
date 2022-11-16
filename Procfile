@@ -1,1 +1,1 @@
- web: gunicorn 'oil.wsgi'
+web: python manage.py migrate && gunicorn oil.wsgi
